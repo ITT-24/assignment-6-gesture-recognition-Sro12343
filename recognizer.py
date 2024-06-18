@@ -77,19 +77,6 @@ class dolar_recognizer():
             result = Result(self.Unistrokes[u].Name, score, t1-t0)
         return result
         
-        
-    def AddGesture(self,name, points):
-        self.Unistrokes.append(Unistroke(name, points))#  append new unistroke
-        num = 0  
-        for i in range(len(self.Unistrokes)):
-            if (self.Unistrokes[i].Name == name):
-                num +=1
-        
-        return num
-    
-    def DeleteUserGestures(self):
-        self.Unistrokes = self.Unistrokes[:NumUnistrokes]#  clear any beyond the original set
-        return NumUnistrokes
 
 
 def IndicativeAngle(points):

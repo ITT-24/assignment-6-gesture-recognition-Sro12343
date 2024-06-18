@@ -11,16 +11,45 @@ from recognizer import Unistroke
 import Strokes
 import os.path
 
+
+
+from keras.models import load_model
+import numpy as np
+from scipy.signal import resample
+
+
 WINDOW_WIDTH = 1220
 WINDOW_HEIGHT = 760
 window = pyglet.window.Window(WINDOW_WIDTH, WINDOW_HEIGHT)
 mouse_x, mouse_y = 0, 0
 record = False
 positions = []
+positions_2 = []
 circles = []
 result_circles = []
 
 current_dir = os.path.dirname(__file__)
+
+
+from tensorflow.keras.models import load_model
+from tensorflow.keras.optimizers import Adam
+model_p = 'LSTM_64_model.h5'
+model = load_model(model_p, compile=False)
+
+# Recompile the model with a new optimizer
+model.compile(optimizer=Adam(), loss='categorical_crossentropy', metrics=['accuracy'])
+#
+#model_p = os.path.join(current_dir,'LSTM_32_model.keras')
+#if os.path.isfile(model_p):
+#    model = load_model(model_p) 
+#    model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+#else:
+#    print("Model file not found.")
+
+
+
+
+
 background_p = os.path.join(current_dir,'assets','b.png')
 background = pyglet.image.load(background_p)
 background_image = pyglet.sprite.Sprite(img=background)
@@ -131,7 +160,9 @@ def add_circle(x,y):
 def on_mouse_drag(x, y, dx, dy, buttons, modifiers):
     if buttons == mouse.LEFT and record == True:
         global positions
+        global positions_2
         positions.append(Point(x,WINDOW_HEIGHT-y))
+        positions_2.append([x,WINDOW_HEIGHT-y])
         add_circle(x,y)
         #print("Point("+str(x) + ","+ str(y)+"),")
     
@@ -149,6 +180,7 @@ def on_mouse_press(x, y, button, modifiers):
         global positions
         global record
         positions.clear()
+        positions_2.clear()
         record = True
         result_circles.clear()
         circles.clear()
@@ -170,7 +202,19 @@ def on_mouse_release(x, y, button, modifiers):
         print(result_t.Name)
         
         
-        if(result_t.Name == Unistrokes[index].Name):
+        NUM_POINTS = 50
+        resampled = resample(positions_2, NUM_POINTS)
+        resampled_array = np.array(resampled)
+        resampled_array = resampled_array.reshape(1, 50, 2)
+        prediction = model.predict(resampled_array)
+        prediction= np.argmax(prediction, axis=1)
+        prediction_name = s[np.argmax(prediction)].Name
+        print("--->")
+        print(prediction_name)
+        print(np.argmax(prediction))
+        
+        
+        if(result_t.Name == s[index].Name):
             sfx_player.queue(success_sfx)
             sfx_player.play()
             if index +1 <= 3:
@@ -191,7 +235,8 @@ def on_mouse_release(x, y, button, modifiers):
   
     
     
-s = Strokes
+s = Strokes.Unistrokes
+#print(s[0].Name)
 dr = dolar_recognizer(s)
 
 music_player.play()
